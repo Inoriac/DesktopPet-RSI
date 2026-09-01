@@ -64,6 +64,7 @@ ProcessSandboxService.inspect:
 - **依赖**: Task 1
 
 **文件**:
+- 修改: `DesktopPet-RSI-Supervisor/CMakeLists.txt`
 - 实现: `DesktopPet-RSI-Supervisor/src/ipc/protocol_v1.h`
 - 实现: `DesktopPet-RSI-Supervisor/src/ipc/frame_codec.*`
 - 实现: `DesktopPet-RSI-Supervisor/src/ipc/trusted_ipc_gateway.*`
