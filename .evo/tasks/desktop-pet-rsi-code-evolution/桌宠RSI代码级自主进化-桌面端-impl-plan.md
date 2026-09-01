@@ -59,7 +59,7 @@ ProcessSandboxService.inspect:
 ## Task 2: 可信 IPC 与会话认证
 
 - **关联设计**: §3.3 [TCB] 可信 IPC 与会话认证
-- **状态**: [ ]
+- **状态**: [x]
 - **Wave**: 2
 - **依赖**: Task 1
 

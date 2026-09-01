@@ -13,6 +13,9 @@
 - [code-impl Task 1 sanity check] §3.2.5 的 restricted token、Low Integrity、AppContainer、Job Object、completion port 和 canonical path handle 锚点已在 TCB 实现中对应；非 Windows 生产后端明确 fail-closed，未引入 `QProcess`/`Popen` 降级路径。
 - [code-impl Task 1 验证] 定向 QtTest 18/18 通过；Service、Session Host 与平台无关沙箱代码通过 `-Wall -Wextra -Wpedantic` 编译；非 Windows 两个入口均以状态 1 拒绝运行。当前机器无 CMake 和 Windows SDK，因此未验证 CMake configure、`_WIN32` 编译及真实 Token/AppContainer/ACL/Job 行为。
 - [code-impl Task 1 工程取舍] 当前以可运行的最小边界为准：信任签名安装/准备流程预置并保护目录 ACL，运行时对声明根目录执行 fail-closed 校验；不在 Task 1 预建递归 Authz 扫描、动态 ACL 租约或独立墙钟计时系统。真实 Windows 集成或后续健康监控暴露具体问题时再按证据收敛。
+- [code-impl Task 2 sanity check] §3.3.5 的 4-byte big-endian framing 参照已确认，Task 1 的受控 PID/AppContainer SID/角色与 `ProcessSandboxService::confirmAuthenticated` 契约可直接用于 `Launching -> Running` 认证。
+- [code-impl Task 2 验证] FrameCodec 7/7、TrustedIpcGateway 10/10，合计 17/17 定向单测通过；IPC 与关联 Task 1 源码通过 `-Wall -Wextra -Wpedantic` 编译。当前无 CMake/Windows SDK，未验证 `_WIN32` Named Pipe/Token/DACL；本机 arm64 Qt `neon` 不兼容，定向测试沿用 x86_64 Qt 6.8.3。
+- [code-impl Task 2 code review] 不可信 Pipe 客户端的 DACL 权限已从 `GENERIC_ALL` 收紧为 `FILE_READ_DATA | FILE_WRITE_DATA | SYNCHRONIZE`，并由共用 SDK 常量和回归测试排除 `FILE_CREATE_PIPE_INSTANCE/WRITE_DAC/WRITE_OWNER`。
 
 ## 设计偏差
 
@@ -25,3 +28,4 @@
 
 - [resolved] Task 1 的 launcher 行号和 `host_messages.h` 文件边界已在系分与 impl-plan 修正。
 - [resolved] Task 1 与 Task 2 的启动认证边界已通过 `confirmAuthenticated` 契约补齐。
+- [pending] Task 2 当前为内存 session/幂等记录；Task 3 引入 SQLite/LifeLedger 后，需在最终 Service composition 中补齐 `runtime_session`、24 小时持久幂等与可信审计，不得以当前内存实现作为最终交付。
