@@ -99,6 +99,7 @@ TrustedIpcGateway.close:
 - **依赖**: Task 2
 
 **文件**:
+- 修改: `DesktopPet-RSI-Supervisor/CMakeLists.txt`
 - 实现: `DesktopPet-RSI-Supervisor/src/storage/sqlite_database.*`
 - 实现: `DesktopPet-RSI-Supervisor/src/storage/migrations/001_initial.sql`
 - 实现: `DesktopPet-RSI-Supervisor/src/ledger/life_ledger_service.*`
