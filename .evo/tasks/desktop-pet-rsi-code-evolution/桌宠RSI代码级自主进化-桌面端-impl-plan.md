@@ -18,7 +18,7 @@
 ## Task 1: Windows Service 与进程沙箱
 
 - **关联设计**: §3.2 [TCB] Windows Service 与进程沙箱
-- **状态**: [ ]
+- **状态**: [x]
 - **Wave**: 1
 - **依赖**: 无
 
