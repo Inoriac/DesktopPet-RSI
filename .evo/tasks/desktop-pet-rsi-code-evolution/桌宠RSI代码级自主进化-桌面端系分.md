@@ -332,7 +332,7 @@ Builder 只读访问 TCB 准备的源码基线和工具链，只写独立 worksp
 | Win32 | `CreateJobObjectW`, `SetInformationJobObject`, `AssignProcessToJobObject`, completion port | 必须 suspended 后入 Job，再 resume；禁止 breakaway |
 | Win32 | `CreateAppContainerProfile`/`DeriveAppContainerSidFromAppContainerName` | 安装期创建固定 profile，运行时不得由候选声明新 capability SID |
 | ACL | `GetFinalPathNameByHandleW`, `FILE_FLAG_OPEN_REPARSE_POINT` | 按句柄校验最终对象，拒绝 reparse/ADS/device path |
-| 现有参照 | `launcher/main.py:334` 当前直接 `subprocess.Popen` | 被 Supervisor launch 替换；`process_tracker.py` 不再作为权威进程控制 |
+| 现有参照 | `launcher/main.py:391`、`:396` 当前直接 `subprocess.Popen` | 被 Supervisor launch 替换；`process_tracker.py` 不再作为权威进程控制 |
 
 Session Host 和 Service 之间的 launch DTO 至少含 9 个字段，必须使用 TCB `protocol/host_messages.h` 的同一结构定义，不在两端手写 JSON 字段名。
 

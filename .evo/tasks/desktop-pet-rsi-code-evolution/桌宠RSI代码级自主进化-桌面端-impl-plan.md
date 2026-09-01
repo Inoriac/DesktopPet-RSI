@@ -29,6 +29,7 @@
 - 实现: `DesktopPet-RSI-Supervisor/src/sandbox/process_sandbox_service.h`
 - 实现: `DesktopPet-RSI-Supervisor/src/sandbox/process_sandbox_service.cpp`
 - 实现: `DesktopPet-RSI-Supervisor/src/sandbox/windows_process_sandbox.cpp`
+- 实现: `DesktopPet-RSI-Supervisor/src/protocol/host_messages.h`
 - 实现: `DesktopPet-RSI-Supervisor/src/session_host/main.cpp`
 - 实现: `DesktopPet-RSI-Supervisor/src/service/main.cpp`
 - 测试: `DesktopPet-RSI-Supervisor/tests/test_process_sandbox.cpp`
