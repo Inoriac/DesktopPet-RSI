@@ -287,6 +287,8 @@ class ProcessSandboxService {
 public:
     virtual Result<SandboxInstance, SupervisorError> launch(
         const SandboxLaunchRequest& request) = 0;
+    virtual Result<SandboxInstance, SupervisorError> confirmAuthenticated(
+        const SandboxId& sandboxId, std::uint64_t trustedPeerPid) = 0;
     virtual Result<void, SupervisorError> terminate(
         const SandboxId& sandboxId, TerminationReason reason) = 0;
     virtual Result<SandboxSnapshot, SupervisorError> inspect(
@@ -301,6 +303,8 @@ public:
 | `launch` | `request.profileId/candidateId` | 系统推导（来源: 当前候选和 owner session） |
 | `launch` | `request.resourcePolicyId` | 配置默认值（来源: `sandbox.policy.<role>`） |
 | `launch` | `request.bootstrapSecretId` | 系统推导（来源: Supervisor 生成的一次性 secret） |
+| `confirmAuthenticated` | `sandboxId` | 系统推导（来源: §3.2 launch 返回的 Launching instance） |
+| `confirmAuthenticated` | `trustedPeerPid` | 系统推导（来源: §3.3 从 Named Pipe 内核 peer identity 取得的 PID） |
 | `terminate` | `sandboxId` | 调用方传入 |
 | `terminate` | `reason` | 系统推导（来源: owner 命令、健康规则或 Service 停止事件） |
 | `inspect` | `sandboxId` | 调用方传入 |
@@ -312,8 +316,8 @@ public:
 1. Service 校验对象已 seal、角色合法、profile/candidate 状态允许启动，并签发只使用一次的 bootstrap secret。
 2. 签名安装器注册的“用户登录时、非提权运行”任务启动 Session Host；Service 选择预注册的 AppContainer profile 和资源策略，将 `LaunchCommand` 发送给同一 owner SID 的 Host。任务定义与 Host 安装目录只允许 owner/installer/TCB 管理，不对 PET AppContainer 开放。
 3. Session Host 重新校验 Service pipe、TCB 签名对象和目录 ACL，从当前用户 token 创建 restricted primary token，去除 privilege/管理员 SID，设置 Low Integrity 与 `PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES`。
-4. Session Host 创建带 `KILL_ON_JOB_CLOSE`、active process、内存、CPU 和时限的 Job；以 `bInheritHandles=FALSE` suspended 启动进程，先 assign Job 再 resume。
-5. Service 等待目标进程从对应 Runtime/Builder Pipe 完成 peer token + bootstrap secret 握手；超时则终止 Job。
+4. Session Host 先验证/设置目标 AppContainer SID 的声明目录 ACL，持有无 delete-share 的 canonical path handle，创建带 `KILL_ON_JOB_CLOSE`、active process、内存、CPU 和时限的 Job；使用清洗后的最小环境，以 `bInheritHandles=FALSE` suspended 启动进程，先 assign Job 再 resume。资源上限为零、越过编译期硬上限或对象未绑定默认策略时 fail-closed。
+5. `launch` 只返回 `Launching`。Service 等待目标进程从对应 Runtime/Builder Pipe 完成 peer token + bootstrap secret 握手；§3.3 校验实际 peer PID 与 native PID 相同后调用 `confirmAuthenticated`，此时才转为 `Running`。超时则终止 Job。
 6. Job completion port、进程退出和 Service 停止事件驱动状态更新。Session Host 失联时 Service 将所有关联 sandbox 标为不可验证并要求 Host 关闭 Job；Host 自身退出通过 handle close 自动清理 Job。
 
 Builder 只读访问 TCB 准备的源码基线和工具链，只写独立 workspace/output；Runtime 只读执行活动槽，只能写 AppContainer 临时目录。二者均不能看到 `.git`、TCB 数据和 secrets。
@@ -343,12 +347,13 @@ Session Host 和 Service 之间的 launch DTO 至少含 9 个字段，必须使�
 | 候选请求未登记路径或超出角色资源策略 | 业务异常 | 抛：`CAPABILITY_DENIED` | 由 IPC 统一错误映射覆盖；另追加安全事件 |
 | Session Host 不属于目标 owner SID/签名路径 | 业务异常 | 抛：`AUTH_FAILED` | 统一关闭 Host Pipe；本模块额外停止该 SID 的启动流程 |
 | 进程创建后未在超时内握手 | 系统异常 | 重试：仅对稳定 release 由 SCM 编排最多重试 1 次，候选直接失败 | 映射 `HEALTH_HARD_FAILURE`；必须终止整个 Job |
+| `confirmAuthenticated` 的 peer PID 与 native PID 不同 | 业务异常 | 抛：`AUTH_FAILED` | 终止 Job 并审计；不得把错误进程标记 Running |
 | Job/Token/ACL Win32 调用失败 | 系统异常 | 抛：`INTERNAL_ERROR` | 统一生成 correlationId；不得降级为普通不受限 `Popen` |
 
 #### 3.2.7 关键行为场景
 
-- 启动稳定 PET：给定已签名 release 和 active profile，`launch` 创建受限进程、在 Job 中恢复执行并完成认证；后置条件是唯一 running runtime session 存在，PET 对活动槽只读且 TCB 可整树终止。
-- 启动 Builder：给定合法 workspace，`launch` 只授予该 workspace/output 与只读工具链；后置条件是 Builder 无 `.git`、主库、A/B 槽和任意网络访问。
+- 启动稳定 PET：给定已签名 release 和 active profile，`launch` 创建受限进程并返回 Launching；`confirmAuthenticated` 收到匹配的内核 peer PID 后转 Running，后置条件是唯一 running runtime session 存在，PET 对活动槽只读且 TCB 可整树终止。
+- 启动 Builder：给定合法 workspace，`launch` 只授予该 workspace/output 与只读工具链；`confirmAuthenticated` 后 Builder 才进入 Running，后置条件是无 `.git`、主库、A/B 槽和任意原始网络访问。
 - 紧急终止：`terminate` 接收 running sandbox 后关闭 Job；后置条件是全部子进程退出、session 终结且不删除任何 LifeEvent 或人格状态。
 - 查询运行态：`inspect` 返回 OS 观测的 PID、Job 计量和心跳关联；后置条件是返回值不采用候选自报资源数值。
 

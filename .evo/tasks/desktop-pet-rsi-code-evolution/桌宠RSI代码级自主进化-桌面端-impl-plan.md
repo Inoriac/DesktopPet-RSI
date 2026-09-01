@@ -37,9 +37,14 @@
 **测试用例**:
 
 ProcessSandboxService.launch:
-- `launch_whenSealedObjectAndPolicyValid_shouldCreateBoundSandbox`（happy path）
+- `launch_whenSealedObjectAndPolicyValid_shouldCreateBoundLaunchingSandbox`（happy path）
 - `launch_whenObjectIsUnsealed_shouldFailClosed`
 - `launch_whenCallerSuppliesRawPath_shouldRejectRequest`
+- `launch_whenResourceLimitsAreZeroOrTooWide_shouldReject`
+
+ProcessSandboxService.confirmAuthenticated:
+- `confirmAuthenticated_whenPeerPidMatches_shouldMarkSandboxRunning`（happy path）
+- `confirmAuthenticated_whenPeerPidMismatches_shouldTerminateSandbox`
 
 ProcessSandboxService.terminate:
 - `terminate_whenSandboxRunning_shouldTerminateWholeInstance`（happy path）
@@ -47,6 +52,7 @@ ProcessSandboxService.terminate:
 ProcessSandboxService.inspect:
 - `inspect_whenSandboxExists_shouldReturnTrustedSnapshot`（happy path）
 - `inspect_whenSandboxMissing_shouldReturnNotFound`
+- `inspect_whenProcessExited_shouldReleaseNativeSandboxAndAllowRestart`
 
 ## Wave 2
 

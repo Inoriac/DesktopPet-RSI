@@ -15,7 +15,9 @@
 
 - [code-impl Task 1 sanity check] §3.2.5 现有参照行号偏差：系分原写 `launcher/main.py:334` 为直接 `subprocess.Popen`，实际调用位于 `:391`、`:396`；已回溯修正系分锚点。
 - [code-impl Task 1 sanity check] §3.2.5 要求 Service/Session Host 共用 `src/protocol/host_messages.h`，初版 impl-plan Task 1 文件清单遗漏该文件；已补入 Task 1，不改变接口契约。
+- [code-impl Task 1 code review] §3.2 原接口把 native process 创建成功等同于 IPC 认证完成，导致未握手进程被标记 Running；已回溯增加 `confirmAuthenticated(sandboxId, trustedPeerPid)`，明确 `Launching -> Running` 只能由 §3.3 的内核 peer PID 校验触发。
 
 ## 待回溯设计的发现
 
 - [resolved] Task 1 的 launcher 行号和 `host_messages.h` 文件边界已在系分与 impl-plan 修正。
+- [resolved] Task 1 与 Task 2 的启动认证边界已通过 `confirmAuthenticated` 契约补齐。
