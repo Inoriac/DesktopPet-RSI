@@ -135,6 +135,8 @@ LifeLedgerService.importLegacy:
 - **依赖**: Task 2, Task 3
 
 **文件**:
+- 修改: `DesktopPet-RSI-Supervisor/CMakeLists.txt`
+- 修改: `DesktopPet-RSI-Supervisor/src/storage/migrations/001_initial.sql`
 - 实现: `DesktopPet-RSI-Supervisor/src/broker/capability_broker.*`
 - 实现: `DesktopPet-RSI-Supervisor/src/broker/capability_types.h`
 - 实现: `DesktopPet-RSI-Supervisor/src/broker/model_gateway.*`

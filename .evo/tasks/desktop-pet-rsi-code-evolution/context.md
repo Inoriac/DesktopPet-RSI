@@ -29,6 +29,7 @@
 - [code-impl Task 2 sanity check] Task 2 的 IPC 源码与测试必须接入 TCB 构建，初版 impl-plan 文件清单遗漏 `DesktopPet-RSI-Supervisor/CMakeLists.txt`；已补入 Task 2，不改变 §3.3 接口契约。
 - [code-impl Task 3 sanity check] Task 3 的 SQLite/LifeLedger 源码与测试必须接入 TCB 构建，初版 impl-plan 文件清单遗漏 `DesktopPet-RSI-Supervisor/CMakeLists.txt`；已补入 Task 3，不改变 §3.4 接口契约。
 - [code-impl Task 3 sanity check] §3.4 接口期望可信 `auth.producerCommit`，但 Task 2 的实际 `AuthContext` 仅含 `candidateId`；Task 3 改为注入 `ProducerCommitResolver` 从受信 candidate 记录解析 commit，禁止接受 PET 自报 commit。最终绑定在 Service composition 完成。
+- [code-impl Task 4 preflight] §3.5.4 明确新增 capability/budget/usage 数据，且 Task 4 源码和测试必须接入 TCB 构建；初版 impl-plan 文件清单遗漏 `CMakeLists.txt` 与 SQLite v1 migration，已补入，不改变 §3.5 接口契约。
 
 ## 待回溯设计的发现
 
