@@ -16,6 +16,10 @@
 - [code-impl Task 2 sanity check] §3.3.5 的 4-byte big-endian framing 参照已确认，Task 1 的受控 PID/AppContainer SID/角色与 `ProcessSandboxService::confirmAuthenticated` 契约可直接用于 `Launching -> Running` 认证。
 - [code-impl Task 2 验证] FrameCodec 7/7、TrustedIpcGateway 10/10，合计 17/17 定向单测通过；IPC 与关联 Task 1 源码通过 `-Wall -Wextra -Wpedantic` 编译。当前无 CMake/Windows SDK，未验证 `_WIN32` Named Pipe/Token/DACL；本机 arm64 Qt `neon` 不兼容，定向测试沿用 x86_64 Qt 6.8.3。
 - [code-impl Task 2 code review] 不可信 Pipe 客户端的 DACL 权限已从 `GENERIC_ALL` 收紧为 `FILE_READ_DATA | FILE_WRITE_DATA | SYNCHRONIZE`，并由共用 SDK 常量和回归测试排除 `FILE_CREATE_PIPE_INSTANCE/WRITE_DAC/WRITE_OWNER`。
+- [code-impl Task 3 sanity check] §3.4.5 的事件接口、事务、schema、人格、记忆和现有 SQLite 六类 PET 锚点均已验证存在且语义一致；TCB 写入由独立 SQLite 事务实现，不复用 PET 可写数据库。
+- [code-impl Task 3 验证] LifeLedger 12/12、LegacyImporter 4/4 定向 QtTest 通过；两个目标均通过 C++20 `-Wall -Wextra -Wpedantic` 编译且无 warning。当前机器无 CMake，未验证 CMake configure；本 Task 不含 Windows/ONNX 平台行为。
+- [code-impl Task 3 code review] 补齐稳定 personality body 的 revision/trait 范围校验、非法 mutation operation 拒绝、事件与状态 mutation 语义绑定，以及加密 provider 失败统一映射 `LEDGER_UNAVAILABLE`；这些均由先失败后通过的回归测试覆盖。
+- [code-impl Task 3 工程取舍] `PayloadProtector` 与 `ProducerCommitResolver` 采用强制注入且缺失即 fail-closed；测试只使用确定性 protector。真实 DPAPI/CNG provider 和 `candidateId -> gitCommit` 可信绑定留给 Secret Store 与最终 Service composition，不提供明文或伪加密生产降级。
 
 ## 设计偏差
 
@@ -24,9 +28,11 @@
 - [code-impl Task 1 code review] §3.2 原接口把 native process 创建成功等同于 IPC 认证完成，导致未握手进程被标记 Running；已回溯增加 `confirmAuthenticated(sandboxId, trustedPeerPid)`，明确 `Launching -> Running` 只能由 §3.3 的内核 peer PID 校验触发。
 - [code-impl Task 2 sanity check] Task 2 的 IPC 源码与测试必须接入 TCB 构建，初版 impl-plan 文件清单遗漏 `DesktopPet-RSI-Supervisor/CMakeLists.txt`；已补入 Task 2，不改变 §3.3 接口契约。
 - [code-impl Task 3 sanity check] Task 3 的 SQLite/LifeLedger 源码与测试必须接入 TCB 构建，初版 impl-plan 文件清单遗漏 `DesktopPet-RSI-Supervisor/CMakeLists.txt`；已补入 Task 3，不改变 §3.4 接口契约。
+- [code-impl Task 3 sanity check] §3.4 接口期望可信 `auth.producerCommit`，但 Task 2 的实际 `AuthContext` 仅含 `candidateId`；Task 3 改为注入 `ProducerCommitResolver` 从受信 candidate 记录解析 commit，禁止接受 PET 自报 commit。最终绑定在 Service composition 完成。
 
 ## 待回溯设计的发现
 
 - [resolved] Task 1 的 launcher 行号和 `host_messages.h` 文件边界已在系分与 impl-plan 修正。
 - [resolved] Task 1 与 Task 2 的启动认证边界已通过 `confirmAuthenticated` 契约补齐。
 - [pending] Task 2 当前为内存 session/幂等记录；Task 3 引入 SQLite/LifeLedger 后，需在最终 Service composition 中补齐 `runtime_session`、24 小时持久幂等与可信审计，不得以当前内存实现作为最终交付。
+- [pending] Task 3 的生产 composition 必须提供 Windows DPAPI/CNG `PayloadProtector`，并把已认证 `candidateId` 解析为受信 Git commit；任一依赖缺失时保持 `LEDGER_UNAVAILABLE`，不得降级为明文、非 keyed hash 或 PET 自报 commit。

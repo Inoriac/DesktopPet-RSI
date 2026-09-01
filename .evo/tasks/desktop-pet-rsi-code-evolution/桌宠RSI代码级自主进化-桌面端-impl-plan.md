@@ -94,7 +94,7 @@ TrustedIpcGateway.close:
 ## Task 3: LifeLedger 与终身状态投影
 
 - **关联设计**: §3.4 [TCB] LifeLedger 与终身状态投影
-- **状态**: [ ]
+- **状态**: [x]
 - **Wave**: 3
 - **依赖**: Task 2
 
