@@ -29,6 +29,7 @@
 - [code-impl Task 5 验证] SupervisorRuntimeAdapter 定向 QtTest 9/9 通过；Task 5 新源码和 composition 改造通过 C++20 `-Wall -Wextra -Wpedantic` 检查，两项 AgentRuntimeServices 门禁测试通过语法编译。当前机器无 CMake，未链接运行体量较大的既有 AgentRuntimeServicesTests；未验证 Windows bootstrap/Named Pipe、ONNX 或 Task 11 端到端接线。
 - [code-impl Task 5 code review] 修复 malformed hello 发生在认证上下文建立前时 `close()` 未实际关闭 transport 的安全边界问题；新增 RED→GREEN 回归，确保畸形协议响应返回 `PROTOCOL_INVALID`、断开 transport 且 adapter 保持 not ready，同时正常首次 initialize 不被误关。
 - [code-impl Task 5 工程取舍] legacy 本地权威 runtime 只在显式 `DESKTOP_PET_ENABLE_LEGACY_RUNTIME=ON` 构建中启用，默认构建要求 Supervisor；本阶段即使注入 transport 也保持 `SUPERVISOR_NOT_READY`，不伪造未完成的 Windows 可信 composition，也不回退本地 SQLite、直连模型或本地系统能力。
+- [code-impl Wave 5 验证] 单 Task 无文件冲突；impl-plan 8 个用例均有对应测试且含 happy path，测试位于既有 `tests/test_*.cpp` 目录；§3.6.5 锚点与 sanity 留痕齐全。当前机器无 CMake，且按用户低负载约束未跑全量链接测试；使用已通过的 SupervisorRuntimeAdapter 9/9 定向测试和 AgentRuntimeServices 门禁语法编译收口。
 
 ## 设计偏差
 

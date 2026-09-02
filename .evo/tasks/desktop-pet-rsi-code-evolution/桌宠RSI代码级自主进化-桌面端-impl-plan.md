@@ -169,7 +169,7 @@ ModelGateway.complete:
 ## Task 5: Supervisor Runtime Adapter
 
 - **关联设计**: §3.6 [PET] Supervisor Runtime Adapter
-- **状态**: [ ]
+- **状态**: [x]
 - **Wave**: 5
 - **依赖**: Task 2, Task 3, Task 4
 
