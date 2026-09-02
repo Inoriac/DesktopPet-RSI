@@ -5,6 +5,7 @@
 | 版本 | 日期 | 作者 | 说明 |
 |---|---|---|---|
 | 1.0 | 2026-09-01 | Codex | 基于已确认的 RSI 需求设计形成可实施技术方案 |
+| 1.1 | 2026-09-02 | Codex | 明确 Runtime Adapter 分阶段接入及开发构建与受监督构建边界 |
 
 ## 涉及仓库
 
@@ -49,6 +50,7 @@
 - [2026-08-31] 质量改善主要依赖用户使用反馈；明确自然语言反馈优先，行为推断保持低置信度，证据冲突时可克制询问一次。
 - [2026-08-31] 候选校验、A/B 切换、健康检查和硬失败代码回滚自动完成；用户只处理权限、TCB、不可逆动作、主动性格恢复和异常求助。
 - [2026-09-01] 对不改变架构边界的必要实现细节直接选取最小可行方案，不再逐项确认，也不为未知未来场景预建扩展层。
+- [2026-09-02] Supervisor Runtime Adapter 分阶段接入：先完成 transport-neutral adapter、运行时服务注入和 fail-closed 门禁，再由最终 Windows 集成接通 bootstrap handle、Runtime Pipe 与 launcher `start_pet`；旧版直启仅保留在显式开发构建中。
 
 ### 1.3 信任边界与安全不变量
 
@@ -650,6 +652,16 @@ public:
     virtual Result<CapabilityResult, DomainError> invokeCapability(
         const CapabilityInvocation& invocation) = 0;
 };
+
+enum class RuntimeAuthorityMode {
+    LegacyDevelopment,
+    SupervisorRequired,
+};
+
+struct RuntimeCompositionPolicy {
+    RuntimeAuthorityMode authorityMode;
+    SupervisorRuntimeTransport* supervisorTransport;
+};
 ```
 
 | 方法 | 入参字段 | 值来源 |
@@ -663,15 +675,18 @@ public:
 | `completeModel` | `candidateId/profileId` | 系统推导（来源: initialize 返回的 RuntimeContext） |
 | `invokeCapability` | `invocation.type/operation/scopeRef/arguments/idempotencyKey` | 调用方传入 |
 | `invokeCapability` | `leaseId` | 系统推导（来源: RuntimeContext 当前有效 lease map） |
+| runtime composition | `authorityMode` | 配置默认值（来源: TCB 固定的发布构建 preset；开发构建必须显式启用 legacy） |
+| runtime composition | `supervisorTransport` | 系统推导（来源: 最终 Windows 集成消费 TCB 只读 bootstrap handle 后创建；测试使用注入 fake） |
 
 #### 3.6.3 模块业务流程
 
-1. PET 启动后先从继承的只读 bootstrap handle 读取连接信息，完成 Runtime Pipe hello；成功前不初始化 AI、Tool、Memory 写服务。
-2. `AgentRuntimeServices` 创建 `SupervisorEventLedger`、`SupervisorIdentityRepository`、`SupervisorMemoryRepository`、`SupervisorModelCompletionClient` 和 `SupervisorCapabilityClient`，再注入现有服务。
-3. 领域写请求转换为 typed SDK DTO，经单连接异步队列发送；关键写等待 receipt 后才更新本地 working cache。IPC 断开时不把未确认写入伪装为成功。
-4. query 以 `updatedSequence/revision` 更新本地只读缓存。cache 仅为性能优化，进程重启或 release 切换可以删除重建。
-5. ToolRuntime 可先依据 manifest 做 UI 级提示，最终执行统一转成 capability invocation；任何新增本地直接系统调用都不获得 TCB scope，因 OS token 受限而失败。
-6. launcher 不再创建 owner diary bootstrap 并直接 `Popen`；它通过用户侧 Supervisor SDK 发 `start_pet(profileId)`，进程跟踪状态来自 TCB。
+1. runtime composition 先读取构建期 `RuntimeAuthorityMode`。`LegacyDevelopment` 仅存在于显式开发构建并沿用当前本地运行时；TCB 发布 preset 固定为 `SupervisorRequired`，候选配置、命令行和环境变量不能把它切回 legacy。
+2. `SupervisorRequired` 从继承的只读 bootstrap handle 读取连接信息并完成 Runtime Pipe hello；handle、transport 或 hello 任一缺失/失败时保持 AI、Tool、Memory 写服务关闭，不回退本地 SQLite、直连模型或本地系统能力。
+3. `AgentRuntimeServices` 创建 `SupervisorEventLedger`、`SupervisorIdentityRepository`、`SupervisorMemoryRepository`、`SupervisorModelCompletionClient` 和 `SupervisorCapabilityClient`，再注入现有服务。
+4. 领域写请求转换为 typed SDK DTO，经单连接异步队列发送；关键写等待 receipt 后才更新本地 working cache。IPC 断开时不把未确认写入伪装为成功。
+5. query 以 `updatedSequence/revision` 更新本地只读缓存。cache 仅为性能优化，进程重启或 release 切换可以删除重建。
+6. ToolRuntime 可先依据 manifest 做 UI 级提示，最终执行统一转成 capability invocation；任何新增本地直接系统调用都不获得 TCB scope，因 OS token 受限而失败。
+7. 分阶段交付中，Task 5 完成 transport-neutral adapter、现有 runtime composition 接入和上述模式门禁；真实 Windows bootstrap handle、Runtime Pipe transport、Session Host 参数传递及 launcher `start_pet(profileId)` 在 Task 11 最终接线。接线完成前，开发构建可继续旧版直启，受监督构建只能 fail-closed。
 
 #### 3.6.4 数据变更
 
@@ -685,12 +700,14 @@ public:
 |---|---|
 | `core/ai/runtime/agent_runtime_services.*` | 保留服务组装入口，权威 repository 替换为 Supervisor adapter |
 | `core/ai/runtime/agent_bootstrap.*` | bootstrap 成功后再创建 runtime services；移除候选自选数据库路径能力 |
+| `ui/petwindow_ai.cpp`, `ui/petwindow.h` | 接入 runtime composition policy；受监督构建缺少 adapter 时不创建本地权威服务 |
+| 根 `CMakeLists.txt` | 开发构建必须显式启用 legacy；TCB 发布 preset 固定关闭 legacy，且该值不从 PET 配置读取 |
 | `core/ai/event/event_ledger.h::append(const EventDraft&)` | 由 `SupervisorEventLedger` 实现；receipt 映射回 `EventRecord` |
 | `core/ai/identity/personality_service.*` | 人格合并算法保留，save 改为 event + state mutation CAS |
 | `core/ai/memory/memory_repository.h` | insert/update 映射稳定 memory document；`clear/removeById` 改为 suppress 语义 |
 | `core/ai/model/model_router.h::ModelCompletionClient` | 新 client 走 §4.6，不把 API key 放入 PET 配置 |
 | `core/ai/tools/runtime/tool_runtime.*` | policy 作为前置 UX，不作为授权；执行落到 Capability client |
-| `launcher/main.py::_on_start` | 直接 `subprocess.Popen` 替换为 owner/session SDK `start_pet` |
+| `launcher/main.py::_on_start` | Task 11 最终接线时将直接 `subprocess.Popen` 替换为 owner/session SDK `start_pet` |
 
 SDK response JSON 的 `error` 必须完整映射到现有 `DomainError{code,message,retryable,details}`；未知 TCB 错误映射 `SUPERVISOR_ERROR` 并保留 correlationId，不按成功空对象处理。
 
@@ -706,6 +723,8 @@ SDK response JSON 的 `error` 必须完整映射到现有 `DomainError{code,mess
 #### 3.6.7 关键行为场景
 
 - 初始化运行时：`initialize` 使用 TCB bootstrap 完成认证并组装 services；后置条件是当前 profile/commit/session 不可由 PET 配置覆盖，AI 写服务才变为 ready。
+- 启动开发构建：显式启用 legacy 的非发布构建沿用当前本地 runtime；后置条件是它不被标记为 RSI 受监督运行，也不能出现在 TCB sealed release preset 中。
+- 启动受监督构建但 transport 缺失：runtime composition 拒绝创建权威服务；后置条件是 AI 写入、模型和 Tool 能力保持关闭且无 legacy fallback。
 - 写入终身事件：PersonalityService 调 `appendEvent`；后置条件是收到 TCB sequence/revision 后才更新本地 snapshot，进程崩溃不会出现“本地已变、账本未写”的权威分叉。
 - 查询状态：MemoryStore 调 `queryState` 拉取增量 memory documents；后置条件是 cache 标记最新 sequence，未知 schema 被保留为不可理解项而非删除。
 - 模型调用：ModelRouter 选定 `reflection` role 后调 `completeModel`；后置条件是请求进入对应预算桶，PET 配置和日志中没有实际 API key。

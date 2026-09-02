@@ -10,6 +10,7 @@
 - macOS 只运行相关 Qt/Python 单测和纯平台无关逻辑；不运行 ONNX、Windows Service、Token/AppContainer、Job Object、ACL、Named Pipe peer token 或 Authenticode 集成验证。
 - Windows-only 代码必须使用 `_WIN32` 条件编译与明确的 fail-closed 非 Windows实现，不以普通 `QProcess` 或弱权限方案替代。
 - TCB 首次引入测试，沿用 PET 的根级 `tests/test_*.cpp` + QtTest 约定。
+- Runtime Adapter 分阶段交付：Task 5 完成 transport-neutral adapter、真实 runtime composition 注入点及受监督模式 fail-closed 门禁；Task 11 完成 Windows bootstrap handle、Runtime Pipe transport、Session Host 参数和 launcher `start_pet` 接线。legacy 直启只允许显式开发构建，TCB 发布 preset 不包含该路径。
 
 ---
 
@@ -180,6 +181,8 @@ ModelGateway.complete:
 - 实现: `core/ai/supervisor/supervisor_capability_client.*`
 - 修改: `core/ai/runtime/agent_runtime_services.*`
 - 修改: `core/ai/runtime/agent_bootstrap.*`
+- 修改: `ui/petwindow_ai.cpp`
+- 修改: `ui/petwindow.h`
 - 修改: `CMakeLists.txt`
 - 测试: `tests/test_supervisor_runtime_adapter.cpp`
 - 测试: `tests/test_agent_runtime_services.cpp`
@@ -201,6 +204,10 @@ SupervisorRuntimeAdapter.completeModel:
 
 SupervisorRuntimeAdapter.invokeCapability:
 - `invokeCapability_whenLeaseMapped_shouldReturnSanitizedPayload`（happy path）
+
+AgentRuntimeServices.startAfterStorageReady:
+- `startAfterStorageReady_whenLegacyDevelopmentEnabled_shouldUseExistingLocalRuntime`（happy path）
+- `startAfterStorageReady_whenSupervisorRequiredWithoutTransport_shouldFailClosedWithoutLocalFallback`
 
 ## Wave 6
 
@@ -376,6 +383,12 @@ ReleaseController.rollback:
 - 实现: `DesktopPet-RSI-Supervisor/src/owner/owner_control_service.*`
 - 实现: `DesktopPet-RSI-Supervisor/src/recovery_ui/main.cpp`
 - 实现: `DesktopPet-RSI-Supervisor/src/recovery_ui/recovery_window.*`
+- 修改: `DesktopPet-RSI-Supervisor/src/sandbox/windows_process_sandbox.cpp`
+- 实现: `core/ai/supervisor/windows_supervisor_runtime_transport.*`
+- 修改: `core/ai/supervisor/supervisor_runtime_adapter.*`
+- 修改: `main.cpp`
+- 修改: `ui/petwindow_ai.cpp`
+- 修改: `ui/petwindow.h`
 - 修改: `launcher/supervisor_client.py`
 - 修改: `launcher/main.py`
 - 修改: `launcher/process_tracker.py`
@@ -404,3 +417,4 @@ OwnerControlService.emergencyStop:
 SupervisorLauncherClient.startPet:
 - `startPet_whenSupervisorAvailable_shouldRequestManagedLaunchWithoutPopen`（happy path）
 - `startPet_whenSupervisorUnavailable_shouldFailClosedWithoutDirectLaunch`
+- `startPet_whenManagedProcessStarts_shouldPassReadOnlyBootstrapToRuntimeTransport`

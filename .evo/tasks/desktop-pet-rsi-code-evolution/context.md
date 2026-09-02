@@ -10,6 +10,7 @@
 - [2026-09-01] macOS 环境不验证 ONNX 与 Windows 原生 Service/Token/AppContainer/Job/ACL/Named Pipe peer token/Authenticode；平台无关单测照常执行，Windows-only 验证在实现总结中明确列为未验证。
 - [2026-09-01] 优先运行 Task 相关单测，不默认执行全量测试；仅在 Wave 依赖或共享构建文件改动确有必要时扩大范围。
 - [2026-09-01] 每个 §3.X Task 完成、审查和确认后立即形成独立 Git 提交；跨双仓 Task 分别提交。
+- [2026-09-02] Task 5 采用分阶段接入：先实现 transport-neutral Supervisor adapter、真实 runtime composition 注入点和受监督模式 fail-closed 门禁；Windows bootstrap handle、Named Pipe transport、Session Host 参数及 launcher `start_pet` 在 Task 11 接通。legacy 直启仅属于显式开发构建，不是 RSI 发布运行时 fallback。
 - [code-impl Task 1 sanity check] §3.2.5 的 restricted token、Low Integrity、AppContainer、Job Object、completion port 和 canonical path handle 锚点已在 TCB 实现中对应；非 Windows 生产后端明确 fail-closed，未引入 `QProcess`/`Popen` 降级路径。
 - [code-impl Task 1 验证] 定向 QtTest 18/18 通过；Service、Session Host 与平台无关沙箱代码通过 `-Wall -Wextra -Wpedantic` 编译；非 Windows 两个入口均以状态 1 拒绝运行。当前机器无 CMake 和 Windows SDK，因此未验证 CMake configure、`_WIN32` 编译及真实 Token/AppContainer/ACL/Job 行为。
 - [code-impl Task 1 工程取舍] 当前以可运行的最小边界为准：信任签名安装/准备流程预置并保护目录 ACL，运行时对声明根目录执行 fail-closed 校验；不在 Task 1 预建递归 Authz 扫描、动态 ACL 租约或独立墙钟计时系统。真实 Windows 集成或后续健康监控暴露具体问题时再按证据收敛。
@@ -34,6 +35,7 @@
 - [code-impl Task 3 sanity check] Task 3 的 SQLite/LifeLedger 源码与测试必须接入 TCB 构建，初版 impl-plan 文件清单遗漏 `DesktopPet-RSI-Supervisor/CMakeLists.txt`；已补入 Task 3，不改变 §3.4 接口契约。
 - [code-impl Task 3 sanity check] §3.4 接口期望可信 `auth.producerCommit`，但 Task 2 的实际 `AuthContext` 仅含 `candidateId`；Task 3 改为注入 `ProducerCommitResolver` 从受信 candidate 记录解析 commit，禁止接受 PET 自报 commit。最终绑定在 Service composition 完成。
 - [code-impl Task 4 preflight] §3.5.4 明确新增 capability/budget/usage 数据，且 Task 4 源码和测试必须接入 TCB 构建；初版 impl-plan 文件清单遗漏 `CMakeLists.txt` 与 SQLite v1 migration，已补入，不改变 §3.5 接口契约。
+- [code-impl Task 5 preflight] §3.6 原流程同时要求 adapter 接入与 launcher/Windows transport 完成，但初版 Task 5 文件清单遗漏实际 `ui/petwindow_ai.cpp` composition，launcher 又排在 Task 11。已按用户确认改为分阶段交付，并补齐 Task 5 composition 文件与 Task 11 最终接线文件。
 
 ## 待回溯设计的发现
 
@@ -42,3 +44,4 @@
 - [pending] Task 2 当前为内存 session/幂等记录；Task 3 引入 SQLite/LifeLedger 后，需在最终 Service composition 中补齐 `runtime_session`、24 小时持久幂等与可信审计，不得以当前内存实现作为最终交付。
 - [pending] Task 3 的生产 composition 必须提供 Windows DPAPI/CNG `PayloadProtector`，并把已认证 `candidateId` 解析为受信 Git commit；任一依赖缺失时保持 `LEDGER_UNAVAILABLE`，不得降级为明文、非 keyed hash 或 PET 自报 commit。
 - [pending] Task 4 的 capability lease/调用/拒绝/撤销审计当前保存在 append-only TCB audit 表；最终 Service composition 需同步形成 LifeEvent。`release.sign` 的 non-exportable CNG provider 由 sealed artifact/release Task 接入，接入前该能力保持不可签发。
+- [resolved] Task 5 与 Task 11 的 runtime 接线边界已明确：Task 5 不依赖 Task 11 才能实现和测试，但正式 RSI 端到端启动需由 Task 11 完成 Windows transport 与 launcher 接线。
