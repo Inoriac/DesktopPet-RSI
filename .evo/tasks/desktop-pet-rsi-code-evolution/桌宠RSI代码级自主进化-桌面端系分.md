@@ -709,7 +709,7 @@ struct RuntimeCompositionPolicy {
 | `core/ai/tools/runtime/tool_runtime.*` | policy 作为前置 UX，不作为授权；执行落到 Capability client |
 | `launcher/main.py::_on_start` | Task 11 最终接线时将直接 `subprocess.Popen` 替换为 owner/session SDK `start_pet` |
 
-SDK response JSON 的 `error` 必须完整映射到现有 `DomainError{code,message,retryable,details}`；未知 TCB 错误映射 `SUPERVISOR_ERROR` 并保留 correlationId，不按成功空对象处理。
+SDK response JSON 的 `error.code/message` 映射到现有 `DomainError{code,message,details}`，协议字段 `retryable/correlationId` 以同名键完整保存在 `details`；未知 TCB 错误映射 `SUPERVISOR_ERROR` 并保留原始错误码与 correlationId，不按成功空对象处理。
 
 #### 3.6.6 异常场景
 

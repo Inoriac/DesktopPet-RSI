@@ -36,6 +36,7 @@
 - [code-impl Task 3 sanity check] §3.4 接口期望可信 `auth.producerCommit`，但 Task 2 的实际 `AuthContext` 仅含 `candidateId`；Task 3 改为注入 `ProducerCommitResolver` 从受信 candidate 记录解析 commit，禁止接受 PET 自报 commit。最终绑定在 Service composition 完成。
 - [code-impl Task 4 preflight] §3.5.4 明确新增 capability/budget/usage 数据，且 Task 4 源码和测试必须接入 TCB 构建；初版 impl-plan 文件清单遗漏 `CMakeLists.txt` 与 SQLite v1 migration，已补入，不改变 §3.5 接口契约。
 - [code-impl Task 5 preflight] §3.6 原流程同时要求 adapter 接入与 launcher/Windows transport 完成，但初版 Task 5 文件清单遗漏实际 `ui/petwindow_ai.cpp` composition，launcher 又排在 Task 11。已按用户确认改为分阶段交付，并补齐 Task 5 composition 文件与 Task 11 最终接线文件。
+- [code-impl Task 5 sanity check] §3.6 原写 SDK error 映射到 `DomainError{code,message,retryable,details}`，实际共享类型为 `{code,message,details}`。为避免扩大公共接口影响面，已修正为 `code/message` 直接映射，`retryable/correlationId` 以固定同名键保存在 `details`。
 
 ## 待回溯设计的发现
 
