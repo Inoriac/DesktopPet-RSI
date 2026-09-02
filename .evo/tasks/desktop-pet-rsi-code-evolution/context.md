@@ -34,6 +34,7 @@
 - [code-impl Task 6 验证] EvolutionIntent 2/2、EvolutionOpportunityPolicy 5/5 业务用例定向复跑通过；新源码与调度/Daydream 改动已通过 C++20 `-Wall -Wextra -Wpedantic` 定向检查，既有 sleep-cycle 源码仅有原有 aggregate initializer warning。按低负载约束未重编或运行全量测试；未验证 CMake configure、Windows idle/power 或 ONNX。
 - [code-impl Task 6 code review] 未发现需返工的可复现运行故障、数据丢失风险或直接安全边界违规。PET 只做 fail-safe 前置判断，evidence/profile/origin 校验、可信时间、预算、冷却和 candidate/request 唯一性仍由 TCB 在原子操作中重验；Daydream wrapper 解析失败会沿用原有 preserve 路径，不阻断记忆整理。
 - [code-impl Task 6 工程取舍] 本阶段提供低频事件 deadline、自然窗口策略和注入式 Supervisor client，不提前实现 Windows idle/power 读取或最终 runtime composition。PET 配置最小休整即使被压低也不能越过 TCB 权威策略；生产 client 与 Daydream intent callback 未接通时保持无自主候选副作用。
+- [code-impl Wave 6 验证] 单 Task 无文件冲突；impl-plan 7 个用例均有对应测试且含各核心方法 happy path，测试位于既有 `tests/test_*.cpp` 目录；§3.7.5 锚点与 sanity 留痕齐全。按用户低负载约束以 EvolutionIntent 2/2、EvolutionOpportunityPolicy 5/5 定向测试代替全量重跑，CMake、Windows idle/power 与 ONNX 仍未验证。
 
 ## 设计偏差
 

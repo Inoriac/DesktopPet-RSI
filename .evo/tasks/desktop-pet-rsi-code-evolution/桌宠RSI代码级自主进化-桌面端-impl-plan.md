@@ -214,7 +214,7 @@ AgentRuntimeServices.startAfterStorageReady:
 ## Task 6: 进化意图与自然空窗调度
 
 - **关联设计**: §3.7 [PET] 进化意图与自然空窗调度
-- **状态**: [ ]
+- **状态**: [x]
 - **Wave**: 6
 - **依赖**: Task 3, Task 4, Task 5
 
