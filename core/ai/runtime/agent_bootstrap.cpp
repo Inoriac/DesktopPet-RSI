@@ -10,7 +10,7 @@
 
 namespace {
 
-bool isSha256(const QString& value) {
+[[maybe_unused]] bool isSha256(const QString& value) {
     static const QRegularExpression pattern(QStringLiteral("^[0-9a-f]{64}$"));
     return pattern.match(value).hasMatch();
 }
@@ -20,6 +20,13 @@ bool isSha256(const QString& value) {
 Result<RuntimeStartReport, DomainError> AgentBootstrap::start(
     AgentRuntimeServices& services,
     const RuntimeStartRequest& request) {
+#if !defined(DESKTOP_PET_ENABLE_LEGACY_RUNTIME) || !DESKTOP_PET_ENABLE_LEGACY_RUNTIME
+    Q_UNUSED(services)
+    Q_UNUSED(request)
+    return Result<RuntimeStartReport, DomainError>::failure(
+        domainError(QStringLiteral("SUPERVISOR_NOT_READY"),
+                    QStringLiteral("legacy runtime is disabled in this build")));
+#else
     if (services.isStarted() || !request.aiBrain || !request.uiBridge
         || !isCanonicalEventUuid(request.profile.profileId)
         || request.profile.name.trimmed().isEmpty()
@@ -58,4 +65,25 @@ Result<RuntimeStartReport, DomainError> AgentBootstrap::start(
     }
     if (started.isOk()) request.aiBrain->setRuntimeServices(&services);
     return started;
+#endif
+}
+
+Result<RuntimeStartReport, DomainError> AgentBootstrap::start(
+    AgentRuntimeServices& services,
+    const RuntimeStartRequest& request,
+    const RuntimeCompositionPolicy& composition,
+    const RuntimeBootstrap& bootstrap) {
+    Q_UNUSED(bootstrap)
+    if (composition.authorityMode == RuntimeAuthorityMode::LegacyDevelopment) {
+        return start(services, request);
+    }
+    if (!composition.supervisorTransport) {
+        return Result<RuntimeStartReport, DomainError>::failure(
+            domainError(QStringLiteral("SUPERVISOR_NOT_READY"),
+                        QStringLiteral("supervisor transport is required")));
+    }
+    return Result<RuntimeStartReport, DomainError>::failure(
+        domainError(QStringLiteral("SUPERVISOR_NOT_READY"),
+                    QStringLiteral("trusted Windows runtime composition is not connected"),
+                    {{QStringLiteral("integrationTask"), 11}}));
 }

@@ -198,6 +198,8 @@ private slots:
     void readAfter_whenAuthorizationProfileDoesNotMatch_shouldRejectRead();
 
     void start_whenMigrationIsReady_shouldConfigureActivePathsBeforeFirstMemoryStoreOpen();
+    void startAfterStorageReady_whenLegacyDevelopmentEnabled_shouldUseExistingLocalRuntime();
+    void startAfterStorageReady_whenSupervisorRequiredWithoutTransport_shouldFailClosedWithoutLocalFallback();
     void start_whenMigrationIsAmbiguous_shouldUseLegacyPathsAndDisableProfileGrowth();
     void start_whenNewSchemaMigrationFails_shouldKeepLegacyChatToolAndSkillPathAvailable();
     void initializeStorage_whenCalledTwice_shouldKeepFirstPathsAndRejectSecondCall();
@@ -457,6 +459,42 @@ void TestAgentRuntimeServices::start_whenMigrationIsReady_shouldConfigureActiveP
     QCOMPARE(result.value().mode, RuntimeMode::Running);
     QVERIFY(result.value().capabilities.profileStore);
     QVERIFY(result.value().capabilities.eventLedger);
+}
+
+void TestAgentRuntimeServices::startAfterStorageReady_whenLegacyDevelopmentEnabled_shouldUseExistingLocalRuntime() {
+    QTemporaryDir directory;
+    AIBrain brain;
+    auto bridge = makeBridge();
+    AgentRuntimeServices services;
+    RuntimeStartRequest request = requestFor(directory, &brain, bridge.get());
+    RuntimeCompositionPolicy composition;
+    composition.authorityMode = RuntimeAuthorityMode::LegacyDevelopment;
+
+    const auto result = AgentBootstrap::start(services, request, composition);
+
+    QVERIFY(result.isOk());
+    QVERIFY(services.isStarted());
+    QVERIFY(result.value().capabilities.eventLedger);
+    QVERIFY(brain.isStorageInitialized());
+}
+
+void TestAgentRuntimeServices::startAfterStorageReady_whenSupervisorRequiredWithoutTransport_shouldFailClosedWithoutLocalFallback() {
+    QTemporaryDir directory;
+    AIBrain brain;
+    auto bridge = makeBridge();
+    AgentRuntimeServices services;
+    RuntimeStartRequest request = requestFor(directory, &brain, bridge.get());
+    RuntimeCompositionPolicy composition;
+    composition.authorityMode = RuntimeAuthorityMode::SupervisorRequired;
+    composition.supervisorTransport = nullptr;
+
+    const auto result = AgentBootstrap::start(services, request, composition);
+
+    QVERIFY(!result.isOk());
+    QCOMPARE(result.error().code, QStringLiteral("SUPERVISOR_NOT_READY"));
+    QVERIFY(!services.isStarted());
+    QVERIFY(!brain.isStorageInitialized());
+    QVERIFY(services.eventLedger() == nullptr);
 }
 
 void TestAgentRuntimeServices::start_whenMigrationIsAmbiguous_shouldUseLegacyPathsAndDisableProfileGrowth() {

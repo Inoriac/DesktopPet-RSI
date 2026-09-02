@@ -21,6 +21,9 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+option(DESKTOP_PET_ENABLE_LEGACY_RUNTIME
+    "Enable the local authoritative runtime for explicit developer builds" OFF)
+
 set(CMAKE_PREFIX_PATH "E:/Qt/6.5.3/mingw_64/lib/cmake")
 
 find_package(Qt6 COMPONENTS
@@ -127,6 +130,19 @@ set(AGENT_RUNTIME_SOURCES
     core/ai/runtime/agent_runtime_services.cpp
     core/ai/runtime/agent_bootstrap.h
     core/ai/runtime/agent_bootstrap.cpp
+)
+
+set(SUPERVISOR_RUNTIME_SOURCES
+    core/ai/supervisor/supervisor_protocol_types.h
+    core/ai/supervisor/supervisor_protocol_types.cpp
+    core/ai/supervisor/supervisor_runtime_adapter.h
+    core/ai/supervisor/supervisor_runtime_adapter.cpp
+    core/ai/supervisor/supervisor_event_ledger.h
+    core/ai/supervisor/supervisor_event_ledger.cpp
+    core/ai/supervisor/supervisor_model_completion_client.h
+    core/ai/supervisor/supervisor_model_completion_client.cpp
+    core/ai/supervisor/supervisor_capability_client.h
+    core/ai/supervisor/supervisor_capability_client.cpp
 )
 
 set(MODEL_ROUTING_SOURCES
@@ -268,6 +284,7 @@ set(CORE_SOURCES
     core/ai/runtime/profile_data_migrator.cpp
     ${EVENT_LEDGER_SOURCES}
     ${AGENT_RUNTIME_SOURCES}
+    ${SUPERVISOR_RUNTIME_SOURCES}
     ${MODEL_ROUTING_SOURCES}
     ${IDENTITY_STATE_SOURCES}
     ${REFLECTION_SOURCES}
@@ -456,6 +473,9 @@ target_link_libraries(Desktop_Pet
         $<$<PLATFORM_ID:Windows>:psapi>
 )
 
+target_compile_definitions(Desktop_Pet PRIVATE
+    DESKTOP_PET_ENABLE_LEGACY_RUNTIME=$<BOOL:${DESKTOP_PET_ENABLE_LEGACY_RUNTIME}>)
+
 function(configure_private_reflection target_name)
     target_link_libraries(${target_name} $<$<PLATFORM_ID:Windows>:advapi32>)
     if(DESKTOP_PET_HAS_LIBSODIUM)
@@ -629,6 +649,7 @@ add_desktop_pet_cpp_test(event_ledger_tests EventLedgerTests
 set(AGENT_RUNTIME_TEST_SUPPORT_SOURCES
     ${EVENT_LEDGER_SOURCES}
     ${AGENT_RUNTIME_SOURCES}
+    ${SUPERVISOR_RUNTIME_SOURCES}
     ${MODEL_ROUTING_SOURCES}
     ${IDENTITY_STATE_SOURCES}
     ${REFLECTION_SOURCES}
@@ -729,6 +750,24 @@ set(AGENT_RUNTIME_TEST_SUPPORT_SOURCES
     include/global_types.h
 )
 
+add_desktop_pet_cpp_test(supervisor_runtime_adapter_tests SupervisorRuntimeAdapterTests
+    SOURCES
+        tests/test_supervisor_runtime_adapter.cpp
+        core/ai/supervisor/supervisor_protocol_types.h
+        core/ai/supervisor/supervisor_protocol_types.cpp
+        core/ai/supervisor/supervisor_runtime_adapter.h
+        core/ai/supervisor/supervisor_runtime_adapter.cpp
+        core/ai/event/event_types.h
+        core/ai/event/event_types.cpp
+    INCLUDE_DIRS
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/core
+    LIBRARIES
+        Qt::Core
+        Qt::Test
+)
+
 add_desktop_pet_cpp_test(agent_runtime_services_tests AgentRuntimeServicesTests
     SOURCES
         tests/test_agent_runtime_services.cpp
@@ -749,6 +788,8 @@ add_desktop_pet_cpp_test(agent_runtime_services_tests AgentRuntimeServicesTests
     APPLE_CORE_GRAPHICS
     PRIVATE_REFLECTION
 )
+target_compile_definitions(agent_runtime_services_tests PRIVATE
+    DESKTOP_PET_ENABLE_LEGACY_RUNTIME=1)
 
 # ---- Emotion provider read-only contract tests ----
 add_desktop_pet_cpp_test(emotion_provider_contract_tests EmotionProviderContractTests
@@ -793,6 +834,8 @@ add_desktop_pet_cpp_test(identity_state_tests IdentityStateTests
     APPLE_CORE_GRAPHICS
     PRIVATE_REFLECTION
 )
+target_compile_definitions(identity_state_tests PRIVATE
+    DESKTOP_PET_ENABLE_LEGACY_RUNTIME=1)
 
 # ---- Reflection, private diary, and sleep coordinator tests ----
 add_desktop_pet_cpp_test(sleep_cycle_tests SleepCycleTests

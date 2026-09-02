@@ -25,6 +25,10 @@
 - [code-impl Task 4 验证] CapabilityBroker 9/9、ModelGateway 9/9 定向 QtTest 通过；两个目标均通过 C++20 `-Wall -Wextra -Wpedantic` 增量编译且无 warning。按降温要求未重复运行全量测试；Windows Credential Manager、DPAPI/CNG 未在 macOS 验证。
 - [code-impl Task 4 code review] 修复 provider credential 回显在 usage 落库后才拒绝、耗尽的首个预算 lease 阻断后续有效 lease、DNS 地址解析 fail-open、模型 token 预占低估和 provider 输出超请求上限五个可复现问题；均由 RED→GREEN 回归覆盖。
 - [code-impl Task 4 工程取舍] 当前仅实现 `network.http` 可执行能力，其余已知类型 fail-closed；网络执行器和模型 provider 使用 TCB 内注入接口，不在本 Task 引入完整 HTTP 栈或生产明文 secret fallback。非 Windows SecretStore 明确 fail-closed。
+- [code-impl Task 5 sanity check] §3.6.5 的 `AgentRuntimeServices`/`AgentBootstrap`、`EventLedger::append`、人格/记忆 repository、`ModelCompletionClient`、`ToolRuntime` 和 launcher 锚点均已验证存在；Task 5 只接 transport-neutral adapter 与构建期门禁，Windows transport/launcher 仍按分阶段决定留给 Task 11。
+- [code-impl Task 5 验证] SupervisorRuntimeAdapter 定向 QtTest 9/9 通过；Task 5 新源码和 composition 改造通过 C++20 `-Wall -Wextra -Wpedantic` 检查，两项 AgentRuntimeServices 门禁测试通过语法编译。当前机器无 CMake，未链接运行体量较大的既有 AgentRuntimeServicesTests；未验证 Windows bootstrap/Named Pipe、ONNX 或 Task 11 端到端接线。
+- [code-impl Task 5 code review] 修复 malformed hello 发生在认证上下文建立前时 `close()` 未实际关闭 transport 的安全边界问题；新增 RED→GREEN 回归，确保畸形协议响应返回 `PROTOCOL_INVALID`、断开 transport 且 adapter 保持 not ready，同时正常首次 initialize 不被误关。
+- [code-impl Task 5 工程取舍] legacy 本地权威 runtime 只在显式 `DESKTOP_PET_ENABLE_LEGACY_RUNTIME=ON` 构建中启用，默认构建要求 Supervisor；本阶段即使注入 transport 也保持 `SUPERVISOR_NOT_READY`，不伪造未完成的 Windows 可信 composition，也不回退本地 SQLite、直连模型或本地系统能力。
 
 ## 设计偏差
 

@@ -19,6 +19,7 @@
 #include "ai/runtime/agent_bootstrap.h"
 #include "ai/runtime/agent_runtime_services.h"
 #include "ai/runtime/runtime_ui_bridge.h"
+#include "ai/supervisor/supervisor_protocol_types.h"
 #include "configLoader/config_manager.h"
 #include "controller/pet_controller.h"
 #include "render_engine.h"
@@ -30,6 +31,15 @@
 #include <QMetaObject>
 
 #include <utility>
+
+bool PetWindow::configureSupervisorRuntime(
+    RuntimeBootstrap bootstrap, SupervisorRuntimeTransport* transport) {
+    if (runtimeServices || !transport) return false;
+    runtimeComposition.authorityMode = RuntimeAuthorityMode::SupervisorRequired;
+    runtimeComposition.supervisorTransport = transport;
+    supervisorBootstrap = std::move(bootstrap);
+    return true;
+}
 
 void PetWindow::setupAiBrain() {
     if (!aiBrain || !renderViewport || !renderViewport->getRenderEngine()) {
@@ -97,7 +107,8 @@ void PetWindow::setupAiBrain() {
     runtimeRequest.aiBrain = aiBrain.get();
     runtimeRequest.uiBridge = runtimeUiBridge.get();
     const Result<RuntimeStartReport, DomainError> runtimeStarted =
-        AgentBootstrap::start(*runtimeServices, runtimeRequest);
+        AgentBootstrap::start(*runtimeServices, runtimeRequest,
+                              runtimeComposition, supervisorBootstrap);
     if (!runtimeStarted.isOk()) {
         qWarning() << "[AIBrain] runtime bootstrap failed:"
                    << runtimeStarted.error().code << runtimeStarted.error().message;

@@ -17,6 +17,7 @@
 
 #include "ai/ai_brain.h"
 #include "ai/runtime/runtime_types.h"
+#include "ai/supervisor/supervisor_protocol_types.h"
 #include "ai/scheduler/agent_scheduler.h"
 #include "ai/tool_registry.h"
 #include "bubble_playback_controller.h"
@@ -59,6 +60,8 @@ public:
                               const VoiceConfig& voiceConfig = VoiceConfig{});
     void previewBubble(const QString& message = QString());
     bool loadModel(const QString &modelPath);
+    bool configureSupervisorRuntime(RuntimeBootstrap bootstrap,
+                                    SupervisorRuntimeTransport* transport);
     
     // 动画控制方法
     void playAnimation();
@@ -190,6 +193,8 @@ private:
     PetProfile profile;
     ProfileMigrationRequest profileMigration;
     QString ownerDiaryBootstrapPath;
+    RuntimeCompositionPolicy runtimeComposition = compiledRuntimeCompositionPolicy();
+    RuntimeBootstrap supervisorBootstrap;
     QString modelName;
 
     // 设置
