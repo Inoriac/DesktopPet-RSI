@@ -211,6 +211,15 @@ set(OWNER_DIARY_SOURCES
     core/ai/owner/owner_diary_server.cpp
 )
 
+set(EVOLUTION_SOURCES
+    core/ai/evolution/evolution_types.h
+    core/ai/evolution/evolution_types.cpp
+    core/ai/evolution/evolution_intent_service.h
+    core/ai/evolution/evolution_intent_service.cpp
+    core/ai/evolution/evolution_opportunity_policy.h
+    core/ai/evolution/evolution_opportunity_policy.cpp
+)
+
 set(CORE_SOURCES
     core/animation/animation_manager.cpp
     core/animation/animation_manager.h
@@ -289,6 +298,7 @@ set(CORE_SOURCES
     ${IDENTITY_STATE_SOURCES}
     ${REFLECTION_SOURCES}
     ${OWNER_DIARY_SOURCES}
+    ${EVOLUTION_SOURCES}
 
     core/ai/ai_tool.h
     core/ai/tool_registry.cpp
@@ -759,6 +769,32 @@ add_desktop_pet_cpp_test(supervisor_runtime_adapter_tests SupervisorRuntimeAdapt
         core/ai/supervisor/supervisor_runtime_adapter.cpp
         core/ai/event/event_types.h
         core/ai/event/event_types.cpp
+    INCLUDE_DIRS
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/core
+    LIBRARIES
+        Qt::Core
+        Qt::Test
+)
+
+add_desktop_pet_cpp_test(evolution_intent_tests EvolutionIntentTests
+    SOURCES
+        tests/test_evolution_intent.cpp
+        ${EVOLUTION_SOURCES}
+    INCLUDE_DIRS
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/core
+    LIBRARIES
+        Qt::Core
+        Qt::Test
+)
+
+add_desktop_pet_cpp_test(evolution_opportunity_policy_tests EvolutionOpportunityPolicyTests
+    SOURCES
+        tests/test_evolution_opportunity_policy.cpp
+        ${EVOLUTION_SOURCES}
     INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/include

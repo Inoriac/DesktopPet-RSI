@@ -10,6 +10,7 @@
 #include "ai/tools/runtime/tool_runtime.h"
 
 #include <QObject>
+#include <QHash>
 #include <QTimer>
 
 class AgentScheduler : public QObject {
@@ -39,10 +40,16 @@ public:
     qint64 msToNextDue() const;
     bool hasTaskDueBefore(const QDateTime& boundary) const;
 
+    // Ephemeral domain deadlines are rebuilt from authoritative state after a
+    // restart. An invalid deadline clears the key.
+    void scheduleDeadline(const QString& key, const QDateTime& deadline);
+    QDateTime deadline(const QString& key) const;
+
 signals:
     void taskTriggered(const QString& id, const QString& title);
     void taskFailed(const QString& id, const QString& errorMessage);
     void taskChanged();
+    void deadlineReached(const QString& key);
 
 private:
     void checkDueTasks();
@@ -52,6 +59,7 @@ private:
     // 最近 enabled 且 nextTriggerAt 有效任务的 due 时间；无则 invalid。
     // scheduleNextTick 与 msToNextDue 共享此过滤，避免双份维护。
     QDateTime nearestDueAt() const;
+    QDateTime nearestWakeAt() const;
     static QString defaultStoragePath();
 
 private:
@@ -62,6 +70,7 @@ private:
     QString m_storagePath;
     bool m_running = false;
     QDateTime m_lastProactiveAt;
+    QHash<QString, QDateTime> m_deadlines;
     int m_minProactiveGapMs = 10 * 60 * 1000;
 };
 

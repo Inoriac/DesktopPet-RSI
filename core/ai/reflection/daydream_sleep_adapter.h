@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "ai/memory/daydream_consolidator.h"
+#include "ai/evolution/evolution_types.h"
 #include "cancellation_token.h"
 #include "reflection_types.h"
 
@@ -14,13 +15,16 @@ class ModelRouter;
 
 using DaydreamCompletionHandler =
     std::function<void(Result<DaydreamChangeSet, DomainError>)>;
+using EvolutionIntentCandidateHandler =
+    std::function<void(const EvolutionIntentDraft&)>;
 
 class DaydreamSleepAdapter {
 public:
     DaydreamSleepAdapter(QString profileId,
                          QString petName,
                          MemoryStore* memoryStore,
-                         ModelRouter* modelRouter);
+                         ModelRouter* modelRouter,
+                         EvolutionIntentCandidateHandler intentHandler = {});
     ~DaydreamSleepAdapter();
 
     void consolidateAsync(const DaydreamRequest& request,
@@ -40,6 +44,7 @@ private:
     QString m_petName;
     MemoryStore* m_memoryStore = nullptr;
     ModelRouter* m_modelRouter = nullptr;
+    EvolutionIntentCandidateHandler m_intentHandler;
     std::shared_ptr<std::atomic_bool> m_alive =
         std::make_shared<std::atomic_bool>(true);
 };

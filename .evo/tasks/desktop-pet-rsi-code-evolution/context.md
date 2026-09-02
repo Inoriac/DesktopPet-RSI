@@ -30,6 +30,10 @@
 - [code-impl Task 5 code review] 修复 malformed hello 发生在认证上下文建立前时 `close()` 未实际关闭 transport 的安全边界问题；新增 RED→GREEN 回归，确保畸形协议响应返回 `PROTOCOL_INVALID`、断开 transport 且 adapter 保持 not ready，同时正常首次 initialize 不被误关。
 - [code-impl Task 5 工程取舍] legacy 本地权威 runtime 只在显式 `DESKTOP_PET_ENABLE_LEGACY_RUNTIME=ON` 构建中启用，默认构建要求 Supervisor；本阶段即使注入 transport 也保持 `SUPERVISOR_NOT_READY`，不伪造未完成的 Windows 可信 composition，也不回退本地 SQLite、直连模型或本地系统能力。
 - [code-impl Wave 5 验证] 单 Task 无文件冲突；impl-plan 8 个用例均有对应测试且含 happy path，测试位于既有 `tests/test_*.cpp` 目录；§3.6.5 锚点与 sanity 留痕齐全。当前机器无 CMake，且按用户低负载约束未跑全量链接测试；使用已通过的 SupervisorRuntimeAdapter 9/9 定向测试和 AgentRuntimeServices 门禁语法编译收口。
+- [code-impl Task 6 sanity check] §3.7.5 的 `AgentScheduler` deadline 调度、`DaydreamTriggerPolicy`、`DaydreamSleepAdapter::consolidateAsync`、`SleepCycleCoordinator`、人格投影及 Supervisor runtime state 接口锚点均已验证存在且可承接本切片。
+- [code-impl Task 6 验证] EvolutionIntent 2/2、EvolutionOpportunityPolicy 5/5 业务用例定向复跑通过；新源码与调度/Daydream 改动已通过 C++20 `-Wall -Wextra -Wpedantic` 定向检查，既有 sleep-cycle 源码仅有原有 aggregate initializer warning。按低负载约束未重编或运行全量测试；未验证 CMake configure、Windows idle/power 或 ONNX。
+- [code-impl Task 6 code review] 未发现需返工的可复现运行故障、数据丢失风险或直接安全边界违规。PET 只做 fail-safe 前置判断，evidence/profile/origin 校验、可信时间、预算、冷却和 candidate/request 唯一性仍由 TCB 在原子操作中重验；Daydream wrapper 解析失败会沿用原有 preserve 路径，不阻断记忆整理。
+- [code-impl Task 6 工程取舍] 本阶段提供低频事件 deadline、自然窗口策略和注入式 Supervisor client，不提前实现 Windows idle/power 读取或最终 runtime composition。PET 配置最小休整即使被压低也不能越过 TCB 权威策略；生产 client 与 Daydream intent callback 未接通时保持无自主候选副作用。
 
 ## 设计偏差
 
@@ -51,3 +55,4 @@
 - [pending] Task 3 的生产 composition 必须提供 Windows DPAPI/CNG `PayloadProtector`，并把已认证 `candidateId` 解析为受信 Git commit；任一依赖缺失时保持 `LEDGER_UNAVAILABLE`，不得降级为明文、非 keyed hash 或 PET 自报 commit。
 - [pending] Task 4 的 capability lease/调用/拒绝/撤销审计当前保存在 append-only TCB audit 表；最终 Service composition 需同步形成 LifeEvent。`release.sign` 的 non-exportable CNG provider 由 sealed artifact/release Task 接入，接入前该能力保持不可签发。
 - [resolved] Task 5 与 Task 11 的 runtime 接线边界已明确：Task 5 不依赖 Task 11 才能实现和测试，但正式 RSI 端到端启动需由 Task 11 完成 Windows transport 与 launcher 接线。
+- [pending] Task 6 的 `EvolutionSupervisorClient` 生产实现、Scheduler 事件源及 Daydream intent callback 需在最终 Service/PET composition 中接到 TCB 原子接口；接通前不得用 PET 本地状态替代证据、可信时间、预算、冷却或唯一性判定。

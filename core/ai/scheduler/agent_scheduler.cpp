@@ -16,6 +16,8 @@
 #include <QTimeZone>
 #include <QUuid>
 
+#include <limits>
+
 namespace {
 QTime parseTime(const QString& value, const QTime& fallback = {}) {
     QTime parsed = QTime::fromString(value.trimmed(), "HH:mm");
@@ -276,6 +278,13 @@ bool AgentScheduler::snoozeTask(const QString& id, int minutes, QString* errorMe
 
 void AgentScheduler::checkDueTasks() {
     const QDateTime now = QDateTime::currentDateTime();
+    QStringList reachedDeadlines;
+    for (auto it = m_deadlines.cbegin(); it != m_deadlines.cend(); ++it) {
+        if (it.value() <= now) reachedDeadlines.append(it.key());
+    }
+    for (const QString& key : reachedDeadlines) m_deadlines.remove(key);
+    for (const QString& key : reachedDeadlines) emit deadlineReached(key);
+
     const QList<ScheduledTask> originalTasks = m_tasks;
     const QDateTime originalLastProactiveAt = m_lastProactiveAt;
     bool changed = false;
@@ -380,18 +389,19 @@ void AgentScheduler::scheduleNextTick() {
         return;
     }
 
-    int nextMs = 60 * 1000;
-    const QDateTime now = QDateTime::currentDateTime();
-    const QDateTime due = nearestDueAt();
-    if (due.isValid()) {
-        const qint64 diff = now.msecsTo(due);
-        if (diff <= 0) {
-            nextMs = 1000;
-        } else {
-            nextMs = qMin(nextMs, static_cast<int>(qMin<qint64>(diff, 60 * 1000)));
-        }
+    const QDateTime due = nearestWakeAt();
+    if (!due.isValid()) {
+        m_timer.stop();
+        return;
     }
-    m_timer.start(qMax(1000, nextMs));
+
+    const QDateTime now = QDateTime::currentDateTime();
+    const qint64 diff = now.msecsTo(due);
+    const int nextMs = diff <= 0
+        ? 1
+        : static_cast<int>(qMin<qint64>(
+            diff, std::numeric_limits<int>::max()));
+    m_timer.start(qMax(1, nextMs));
 }
 
 QDateTime AgentScheduler::nearestDueAt() const {
@@ -402,6 +412,17 @@ QDateTime AgentScheduler::nearestDueAt() const {
         }
         if (!nearest.isValid() || task.nextTriggerAt < nearest) {
             nearest = task.nextTriggerAt;
+        }
+    }
+    return nearest;
+}
+
+QDateTime AgentScheduler::nearestWakeAt() const {
+    QDateTime nearest = nearestDueAt();
+    for (const QDateTime& deadline : m_deadlines) {
+        if (deadline.isValid()
+            && (!nearest.isValid() || deadline < nearest)) {
+            nearest = deadline;
         }
     }
     return nearest;
@@ -418,6 +439,22 @@ bool AgentScheduler::hasTaskDueBefore(const QDateTime& boundary) const {
     if (!boundary.isValid()) return false;
     const QDateTime due = nearestDueAt();
     return due.isValid() && due <= boundary;
+}
+
+void AgentScheduler::scheduleDeadline(
+    const QString& key,
+    const QDateTime& deadlineValue) {
+    if (key.trimmed().isEmpty()) return;
+    if (deadlineValue.isValid()) {
+        m_deadlines.insert(key, deadlineValue);
+    } else {
+        m_deadlines.remove(key);
+    }
+    scheduleNextTick();
+}
+
+QDateTime AgentScheduler::deadline(const QString& key) const {
+    return m_deadlines.value(key);
 }
 
 QString AgentScheduler::defaultStoragePath() {
