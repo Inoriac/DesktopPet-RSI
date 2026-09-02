@@ -20,6 +20,10 @@
 - [code-impl Task 3 验证] LifeLedger 12/12、LegacyImporter 4/4 定向 QtTest 通过；两个目标均通过 C++20 `-Wall -Wextra -Wpedantic` 编译且无 warning。当前机器无 CMake，未验证 CMake configure；本 Task 不含 Windows/ONNX 平台行为。
 - [code-impl Task 3 code review] 补齐稳定 personality body 的 revision/trait 范围校验、非法 mutation operation 拒绝、事件与状态 mutation 语义绑定，以及加密 provider 失败统一映射 `LEDGER_UNAVAILABLE`；这些均由先失败后通过的回归测试覆盖。
 - [code-impl Task 3 工程取舍] `PayloadProtector` 与 `ProducerCommitResolver` 采用强制注入且缺失即 fail-closed；测试只使用确定性 protector。真实 DPAPI/CNG provider 和 `candidateId -> gitCommit` 可信绑定留给 Secret Store 与最终 Service composition，不提供明文或伪加密生产降级。
+- [code-impl Task 4 sanity check] §3.5.5 的 PET `ModelCompletionClient`、`ToolRuntime` 与 `PolicyEngine` 锚点均已验证存在且语义一致；TCB 侧复用可信 `AuthContext`、SQLite 单写事务和 LifeLedger 接线边界。
+- [code-impl Task 4 验证] CapabilityBroker 9/9、ModelGateway 9/9 定向 QtTest 通过；两个目标均通过 C++20 `-Wall -Wextra -Wpedantic` 增量编译且无 warning。按降温要求未重复运行全量测试；Windows Credential Manager、DPAPI/CNG 未在 macOS 验证。
+- [code-impl Task 4 code review] 修复 provider credential 回显在 usage 落库后才拒绝、耗尽的首个预算 lease 阻断后续有效 lease、DNS 地址解析 fail-open、模型 token 预占低估和 provider 输出超请求上限五个可复现问题；均由 RED→GREEN 回归覆盖。
+- [code-impl Task 4 工程取舍] 当前仅实现 `network.http` 可执行能力，其余已知类型 fail-closed；网络执行器和模型 provider 使用 TCB 内注入接口，不在本 Task 引入完整 HTTP 栈或生产明文 secret fallback。非 Windows SecretStore 明确 fail-closed。
 
 ## 设计偏差
 
@@ -37,3 +41,4 @@
 - [resolved] Task 1 与 Task 2 的启动认证边界已通过 `confirmAuthenticated` 契约补齐。
 - [pending] Task 2 当前为内存 session/幂等记录；Task 3 引入 SQLite/LifeLedger 后，需在最终 Service composition 中补齐 `runtime_session`、24 小时持久幂等与可信审计，不得以当前内存实现作为最终交付。
 - [pending] Task 3 的生产 composition 必须提供 Windows DPAPI/CNG `PayloadProtector`，并把已认证 `candidateId` 解析为受信 Git commit；任一依赖缺失时保持 `LEDGER_UNAVAILABLE`，不得降级为明文、非 keyed hash 或 PET 自报 commit。
+- [pending] Task 4 的 capability lease/调用/拒绝/撤销审计当前保存在 append-only TCB audit 表；最终 Service composition 需同步形成 LifeEvent。`release.sign` 的 non-exportable CNG provider 由 sealed artifact/release Task 接入，接入前该能力保持不可签发。

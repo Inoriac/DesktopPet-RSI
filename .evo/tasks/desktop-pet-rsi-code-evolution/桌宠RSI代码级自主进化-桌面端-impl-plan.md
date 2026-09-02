@@ -130,7 +130,7 @@ LifeLedgerService.importLegacy:
 ## Task 4: Capability、秘密与 Model Gateway
 
 - **关联设计**: §3.5 [TCB] Capability、秘密与 Model Gateway
-- **状态**: [ ]
+- **状态**: [x]
 - **Wave**: 4
 - **依赖**: Task 2, Task 3
 
