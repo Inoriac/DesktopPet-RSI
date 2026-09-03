@@ -35,6 +35,10 @@
 - [code-impl Task 6 code review] 未发现需返工的可复现运行故障、数据丢失风险或直接安全边界违规。PET 只做 fail-safe 前置判断，evidence/profile/origin 校验、可信时间、预算、冷却和 candidate/request 唯一性仍由 TCB 在原子操作中重验；Daydream wrapper 解析失败会沿用原有 preserve 路径，不阻断记忆整理。
 - [code-impl Task 6 工程取舍] 本阶段提供低频事件 deadline、自然窗口策略和注入式 Supervisor client，不提前实现 Windows idle/power 读取或最终 runtime composition。PET 配置最小休整即使被压低也不能越过 TCB 权威策略；生产 client 与 Daydream intent callback 未接通时保持无自主候选副作用。
 - [code-impl Wave 6 验证] 单 Task 无文件冲突；impl-plan 7 个用例均有对应测试且含各核心方法 happy path，测试位于既有 `tests/test_*.cpp` 目录；§3.7.5 锚点与 sanity 留痕齐全。按用户低负载约束以 EvolutionIntent 2/2、EvolutionOpportunityPolicy 5/5 定向测试代替全量重跑，CMake、Windows idle/power 与 ONNX 仍未验证。
+- [code-impl Task 7 sanity check] §3.8.5 的 `ProcessSandboxService`、PET 根 `CMakeLists.txt` 与 `launcher/requirements.txt` 锚点均已验证存在；Git、Builder、manifest 与 sealed artifact 作为新的 TCB 垂直切片接入，未复用候选提供的 git config/hook/credential helper。
+- [code-impl Task 7 验证] WorkspaceScanner 3/3、CandidateBuildService/Git/Builder/Seal 7/7，合计 10 个定向业务与安全用例通过；两目标以 Qt 6.8.3 x86_64、C++20 `-Wall -Wextra -Wpedantic` 手工增量编译，只有 Qt `QCryptographicHash::addData` 弃用和测试 aggregate initializer 告警。两仓 `git diff --check`、manifest/三个 state schema JSON 校验通过；未运行全量测试或 CMake configure。
+- [code-impl Task 7 code review] 仅修复四项核心问题：Windows workspace 扫描改用 `CreateFileW(FILE_FLAG_OPEN_REPARSE_POINT)` 句柄校验/读取以避免路径 TOCTOU；Builder peer 确认失败显式终止 sandbox；构建导出绑定已记录 treeId；远端断线后的相同请求只重推 pending commit，workspace/说明变化则 `STATE_CONFLICT`，不制造伪新版本。
+- [code-impl Task 7 工程取舍] 当前完成安全编排与可替换 TCB 后端，不在本机引入或伪造 libgit2、GitHub credential、Windows ACL 或真实 Builder Pipe。生产 Git backend、artifact protection、持久 CandidateStateStore 任一缺失时保持 fail-closed；Windows handle/ACL、真实远端和真实 sandbox build 尚未在 Mac 验证。
 
 ## 设计偏差
 
@@ -57,3 +61,4 @@
 - [pending] Task 4 的 capability lease/调用/拒绝/撤销审计当前保存在 append-only TCB audit 表；最终 Service composition 需同步形成 LifeEvent。`release.sign` 的 non-exportable CNG provider 由 sealed artifact/release Task 接入，接入前该能力保持不可签发。
 - [resolved] Task 5 与 Task 11 的 runtime 接线边界已明确：Task 5 不依赖 Task 11 才能实现和测试，但正式 RSI 端到端启动需由 Task 11 完成 Windows transport 与 launcher 接线。
 - [pending] Task 6 的 `EvolutionSupervisorClient` 生产实现、Scheduler 事件源及 Daydream intent callback 需在最终 Service/PET composition 中接到 TCB 原子接口；接通前不得用 PET 本地状态替代证据、可信时间、预算、冷却或唯一性判定。
+- [pending] Task 7 的 `GitRepositoryBackend` 需由不执行候选 hook/config/helper 的 libgit2 wrapper 实现，并配置 TCB repo-scoped credential；`ArtifactProtectionBackend` 需实现并复验 Windows TCB-only ACL，`CandidateStateStore` 需接入 saga 持久化。最终 composition 前这些能力保持不可用，不得降级到 shell git、普通可写目录或内存状态作为发布链路。

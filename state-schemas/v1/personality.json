@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "desktop-pet://state/personality/v1",
+  "title": "Personality State v1",
+  "type": "object",
+  "required": ["profileId", "revision", "traits"],
+  "properties": {
+    "profileId": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "traits": {
+      "type": "object",
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+    }
+  },
+  "additionalProperties": false
+}

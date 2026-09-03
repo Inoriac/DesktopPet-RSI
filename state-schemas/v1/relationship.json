@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "desktop-pet://state/relationship/v1",
+  "title": "Relationship State v1",
+  "type": "object",
+  "required": ["profileId", "revision", "affinity", "trust"],
+  "properties": {
+    "profileId": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "affinity": { "type": "number", "minimum": 0, "maximum": 1 },
+    "trust": { "type": "number", "minimum": 0, "maximum": 1 }
+  },
+  "additionalProperties": false
+}

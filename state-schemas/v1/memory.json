@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "desktop-pet://state/memory/v1",
+  "title": "Memory State v1",
+  "type": "object",
+  "required": ["profileId", "revision", "items"],
+  "properties": {
+    "profileId": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "items": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": false
+}

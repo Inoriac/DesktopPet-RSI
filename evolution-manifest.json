@@ -1,0 +1,29 @@
+{
+  "manifestVersion": 1,
+  "entrypoints": {
+    "desktop": "Desktop_Pet.exe",
+    "launcher": "launcher/main.py"
+  },
+  "capabilities": [],
+  "stateSchemas": [
+    "state-schemas/v1/personality.json",
+    "state-schemas/v1/memory.json",
+    "state-schemas/v1/relationship.json"
+  ],
+  "build": {
+    "preset": "rsi-release",
+    "outputs": [
+      {
+        "path": "Desktop_Pet.exe",
+        "maxBytes": 268435456
+      }
+    ]
+  },
+  "health": {
+    "smokeActions": [
+      "launch",
+      "supervisor_handshake",
+      "dialogue_smoke"
+    ]
+  }
+}
